@@ -29,8 +29,11 @@ class _AuthScreenState extends State<AuthScreen> {
     _authSubscription = Supabase.instance.client.auth.onAuthStateChange.listen((
       data,
     ) {
+      debugPrint('AUTH SCREEN EVENT: ${data.event}, session: ${data.session}');
       final session = data.session;
-      if (session != null && mounted) {
+      if (session != null &&
+          data.event == AuthChangeEvent.signedIn &&
+          mounted) {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const MainNavScreen()),
