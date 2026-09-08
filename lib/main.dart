@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:zipbite/screens/reset_password_screen.dart';
 import 'package:zipbite/screens/splash_screen.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
+import 'screens/theme_controller.dart';
 
 final navigatorKey = GlobalKey<NavigatorState>();
 
@@ -36,11 +37,19 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      navigatorKey: navigatorKey,
-      title: 'zipbite',
-      debugShowCheckedModeBanner: false,
-      home: const SplashScreen(),
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: themeNotifier,
+      builder: (context, currentMode, child) {
+        return MaterialApp(
+          navigatorKey: navigatorKey,
+          title: 'zipbite',
+          debugShowCheckedModeBanner: false,
+          themeMode: currentMode,
+          theme: ThemeData.light(),
+          darkTheme: ThemeData.dark(),
+          home: const SplashScreen(),
+        );
+      },
     );
   }
 }

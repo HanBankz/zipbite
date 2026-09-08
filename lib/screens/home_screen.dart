@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:zipbite/screens/food_detail_screen.dart';
+import 'nav_controller.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -11,6 +14,61 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  String _currentLocation = 'Fetching location...';
+
+  @override
+  void initState() {
+    super.initState();
+    _getUserLocation();
+  }
+
+  Future<void> _getUserLocation() async {
+    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      setState(() {
+        _currentLocation = 'Location off';
+      });
+      return;
+    }
+
+    LocationPermission permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        setState(() {
+          _currentLocation = 'Permission denied';
+        });
+        return;
+      }
+    }
+
+    if (permission == LocationPermission.deniedForever) {
+      setState(() {
+        _currentLocation = 'Permission denied';
+      });
+      return;
+    }
+
+    try {
+      final position = await Geolocator.getCurrentPosition();
+      final placemarks = await placemarkFromCoordinates(
+        position.latitude,
+        position.longitude,
+      );
+
+      if (placemarks.isNotEmpty) {
+        final place = placemarks[0];
+        setState(() {
+          _currentLocation = '${place.locality}, ${place.country}';
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _currentLocation = 'Unable to get location';
+      });
+    }
+  }
+
   String _selectedCategory = 'All';
 
   final List<String> _categories = [
@@ -21,6 +79,139 @@ class _HomeScreenState extends State<HomeScreen> {
     'Rice',
   ];
 
+  Future<int> _fetchOrderCount() async {
+    final userId = Supabase.instance.client.auth.currentUser?.id;
+    if (userId == null) return 0;
+
+    final response = await Supabase.instance.client
+        .from('orders')
+        .select('id')
+        .eq('user_id', userId);
+
+    return response.length;
+  }
+
+  void _showProfileSheet(BuildContext context) {
+    final user = Supabase.instance.client.auth.currentUser;
+    final metadata = user?.userMetadata;
+    final avatarUrl = metadata?['avatar_url'];
+    final joinDate = user?.createdAt != null
+        ? DateTime.parse(user!.createdAt).toString().substring(0, 10)
+        : 'Unknown';
+
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircleAvatar(
+                radius: 36,
+                backgroundColor: Colors.grey[300],
+                backgroundImage: avatarUrl != null
+                    ? NetworkImage(avatarUrl)
+                    : null,
+                child: avatarUrl == null
+                    ? const Icon(Icons.person, size: 36, color: Colors.black54)
+                    : null,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                _getUserName(),
+                style: GoogleFonts.poppins(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                user?.email ?? '',
+                style: GoogleFonts.roboto(
+                  fontSize: 13,
+                  color: Colors.grey[600],
+                ),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  Column(
+                    children: [
+                      Text(
+                        'Joined',
+                        style: GoogleFonts.roboto(
+                          fontSize: 12,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        joinDate,
+                        style: GoogleFonts.poppins(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                  FutureBuilder<int>(
+                    future: _fetchOrderCount(),
+                    builder: (context, snapshot) {
+                      return Column(
+                        children: [
+                          Text(
+                            'Orders',
+                            style: GoogleFonts.roboto(
+                              fontSize: 12,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '${snapshot.data ?? 0}',
+                            style: GoogleFonts.poppins(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    selectedTabIndex.value = 4;
+                  },
+                  icon: const Icon(Icons.settings, size: 18),
+                  label: const Text('Settings'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFFFF7A00),
+                    side: const BorderSide(color: Color(0xFFFF7A00)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   Future<List<Map<String, dynamic>>> _fetchMenuItems() async {
     final response = await Supabase.instance.client
         .from('menu_items')
@@ -29,6 +220,13 @@ class _HomeScreenState extends State<HomeScreen> {
         );
     debugPrint('RAW RESPONSE: $response');
     return List<Map<String, dynamic>>.from(response);
+  }
+
+  String _getUserName() {
+    final user = Supabase.instance.client.auth.currentUser;
+    final metadata = user?.userMetadata;
+
+    return metadata?['full_name'] ?? metadata?['name'] ?? 'there';
   }
 
   @override
@@ -44,7 +242,7 @@ class _HomeScreenState extends State<HomeScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              'Hi, Ridwan',
+              'Hi, ${_getUserName()}',
               style: GoogleFonts.poppins(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -57,7 +255,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 const Icon(Icons.location_on, size: 19, color: Colors.white),
                 const SizedBox(width: 12),
                 Text(
-                  'Kano, Nigeria',
+                  _currentLocation,
                   style: GoogleFonts.roboto(fontSize: 12, color: Colors.black),
                 ),
               ],
@@ -67,14 +265,19 @@ class _HomeScreenState extends State<HomeScreen> {
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 16),
-            child: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: Colors.grey[200],
-                shape: BoxShape.circle,
+            child: GestureDetector(
+              onTap: () {
+                _showProfileSheet(context);
+              },
+              child: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: Colors.grey[200],
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.person, color: Colors.black54),
               ),
-              child: const Icon(Icons.menu, color: Colors.black54),
             ),
           ),
         ],
