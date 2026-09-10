@@ -119,12 +119,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              restaurant != null
-                                  ? restaurant['name']
-                                  : 'Restaurant',
+                              '\$${order['total']}',
                               style: GoogleFonts.poppins(
                                 fontSize: 16,
-                                fontWeight: FontWeight.w600,
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFFFF7A00),
                               ),
                             ),
                             const SizedBox(height: 6),

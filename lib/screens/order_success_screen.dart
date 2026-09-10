@@ -127,7 +127,7 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
                                       ),
                                     ),
                                     Text(
-                                      '\$${(item['price_at_purchase'] * item['quantity']).toStringAsFixed(2)}',
+                                      '\$${((item['price_at_purchase'] ?? 0) * (item['quantity'] ?? 1)).toStringAsFixed(2)}',
                                       style: GoogleFonts.roboto(
                                         fontSize: 13,
                                         fontWeight: FontWeight.w500,

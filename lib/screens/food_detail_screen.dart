@@ -274,7 +274,7 @@ class _FoodDetailScreenState extends State<FoodDetailScreen> {
                         ),
                       ),
                       child: Text(
-                        'Add to cart - \$${(item['price'] * _quantity).toStringAsFixed(2)}',
+                        'Add to cart - \$${((item['price'] ?? 0) * _quantity).toStringAsFixed(2)}',
                         style: GoogleFonts.poppins(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
