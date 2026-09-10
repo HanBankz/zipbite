@@ -72,14 +72,14 @@ class _AuthScreenState extends State<AuthScreen> {
                             children: [
                               Image.asset(
                                 'assets/images/zipbite_logo.png',
-                                width: 60,
+                                width: 35,
                               ),
                               const SizedBox(width: 12),
                               Text(
                                 "Let's get you ready",
                                 style: GoogleFonts.puppiesPlay(
                                   color: Colors.white,
-                                  fontSize: 80,
+                                  fontSize: 40,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
