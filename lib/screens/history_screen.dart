@@ -25,6 +25,14 @@ class _HistoryScreenState extends State<HistoryScreen> {
     return List<Map<String, dynamic>>.from(response);
   }
 
+  Future<List<Map<String, dynamic>>>? _ordersFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _ordersFuture = _fetchOrders();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -43,7 +51,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
         ),
       ),
       body: FutureBuilder<List<Map<String, dynamic>>>(
-        future: _fetchOrders(),
+        future: _ordersFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -56,131 +64,162 @@ class _HistoryScreenState extends State<HistoryScreen> {
           final orders = snapshot.data ?? [];
 
           if (orders.isEmpty) {
-            return Center(
-              child: Text(
-                'No orders yet',
-                style: GoogleFonts.roboto(fontSize: 16, color: Colors.grey),
+            return RefreshIndicator(
+              color: const Color(0xFFFF7A00),
+              onRefresh: () async {
+                setState(() {
+                  _ordersFuture = _fetchOrders();
+                });
+              },
+              child: ListView(
+                children: [
+                  SizedBox(
+                    height: 400,
+                    child: Center(
+                      child: Text(
+                        'No orders yet',
+                        style: GoogleFonts.roboto(
+                          fontSize: 16,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             );
           }
 
-          return ListView.separated(
-            padding: const EdgeInsets.all(16),
-            itemCount: orders.length,
-            separatorBuilder: (context, index) => const SizedBox(height: 16),
-            itemBuilder: (context, index) {
-              final order = orders[index];
-              final restaurant = order['restaurants'];
+          return RefreshIndicator(
+            color: const Color(0xFFFF7A00),
+            onRefresh: () async {
+              setState(() {
+                _ordersFuture = _fetchOrders();
+              });
+            },
+            child: ListView.separated(
+              padding: const EdgeInsets.all(16),
+              itemCount: orders.length,
+              separatorBuilder: (context, index) => const SizedBox(height: 16),
+              itemBuilder: (context, index) {
+                final order = orders[index];
+                final restaurant = order['restaurants'];
 
-              return GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) =>
-                          OrderSuccessScreen(orderId: order['id']),
-                    ),
-                  );
-                },
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[100],
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(14),
-                        child: Image.network(
-                          restaurant != null
-                              ? restaurant['image_url'] ?? ''
-                              : '',
-                          width: 90,
-                          height: 90,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Container(
-                              width: 90,
-                              height: 90,
-                              color: Colors.grey[300],
-                              child: const Icon(
-                                Icons.storefront,
-                                color: Colors.grey,
-                              ),
-                            );
-                          },
-                        ),
+                return GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            OrderSuccessScreen(orderId: order['id']),
                       ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              '\$${order['total']}',
-                              style: GoogleFonts.poppins(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: const Color(0xFFFF7A00),
+                    );
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[100],
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(14),
+                          child: Image.network(
+                            restaurant != null
+                                ? restaurant['image_url'] ?? ''
+                                : '',
+                            width: 90,
+                            height: 90,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                width: 90,
+                                height: 90,
+                                color: Colors.grey[300],
+                                child: const Icon(
+                                  Icons.storefront,
+                                  color: Colors.grey,
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '\$${order['total']}',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: const Color(0xFFFF7A00),
+                                ),
                               ),
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              order['created_at'].toString().substring(0, 16),
-                              style: GoogleFonts.roboto(
-                                fontSize: 13,
-                                color: Colors.grey[600],
+                              const SizedBox(height: 6),
+                              Text(
+                                order['created_at'].toString().substring(0, 16),
+                                style: GoogleFonts.roboto(
+                                  fontSize: 13,
+                                  color: Colors.grey[600],
+                                ),
                               ),
-                            ),
-                            const SizedBox(height: 10),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 10,
-                                    vertical: 4,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: order['status'] == 'delivered'
-                                        ? Colors.green[100]
-                                        : const Color(0xFFFFE4CC),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Text(
-                                    order['status']
-                                        .toString()
-                                        .replaceAll('_', ' ')
-                                        .toUpperCase(),
-                                    style: GoogleFonts.roboto(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w600,
+                              const SizedBox(height: 10),
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
                                       color: order['status'] == 'delivered'
-                                          ? Colors.green[800]
-                                          : const Color(0xFFFF7A00),
+                                          ? Colors.green[100]
+                                          : const Color(0xFFFFE4CC),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Text(
+                                      order['status']
+                                          .toString()
+                                          .replaceAll('_', ' ')
+                                          .toUpperCase(),
+                                      style: GoogleFonts.roboto(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                        color: order['status'] == 'delivered'
+                                            ? Colors.green[800]
+                                            : const Color(0xFFFF7A00),
+                                      ),
                                     ),
                                   ),
-                                ),
-                                Text(
-                                  '\$${order['total']}',
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                    color: const Color(0xFFFF7A00),
+                                  Text(
+                                    '\$${order['total']}',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: const Color(0xFFFF7A00),
+                                    ),
                                   ),
-                                ),
-                              ],
-                            ),
-                          ],
+                                ],
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-              );
-            },
+                );
+              },
+            ),
           );
         },
       ),
