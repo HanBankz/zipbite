@@ -1,16 +1,20 @@
-# zipbite
+# Zipbite
 
-A new Flutter project.
+Full-stack food delivery app with real-time order tracking, built on Supabase with Stripe checkout.
 
-## Getting Started
+## Features
+- Browse restaurants & menus
+- Cart, checkout, and order tracking in real time
+- Supabase backend (Postgres, Auth, RLS policies)
+- Stripe payment integration
+- Customer-facing flow (Vendor/Driver roles planned)
 
-This project is a starting point for a Flutter application.
+## Tech Stack
+- Flutter / Dart
+- Supabase (Postgres, Auth, Realtime)
+- Stripe
+- Google Maps
 
-A few resources to get you started if this is your first Flutter project:
+## Screenshots
+<!-- paste your screenshots here --><img width="1280" height="791" alt="5906694366019915928_121" src="https://github.com/user-attachments/assets/efb101e9-ca29-4af4-9455-f4323a9516f2" />
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
